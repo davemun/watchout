@@ -33,7 +33,8 @@ var gameSettings = {
   gameWidth: 900,
   heroWidth: 15,
   heroHeight: 15,
-  nEnemies: 20
+  nEnemies: 20,
+  enemySpeed: 2000
 }
 
 var gameBoard = d3.selectAll(".gameboard").append("svg").attr("width", 900).attr("height", 500);
@@ -44,8 +45,7 @@ gameBoard.selectAll("image").data([0]).enter()
         .attr("y", "0")
         .attr("height", gameSettings.gameHeight)
         .attr("width", gameSettings.gameWidth)
-        //.classed("gameBoard", true)
-        ;
+        //.classed("gameBoard", true);
 
 var drag = d3.behavior.drag()
 .origin(function() {
@@ -124,7 +124,7 @@ var moveEnemies2 = function(){
   enemies.each(moveEnemy);
 }
 var moveEnemy = function(enemy){
-  d3.select(this).transition().duration(2000).attr("x", random(gameSettings.gameWidth)).attr("y", random(gameSettings.gameHeight))
+  d3.select(this).transition().duration(gameSettings.enemySpeed).attr("x", random(gameSettings.gameWidth)).attr("y", random(gameSettings.gameHeight))
   .each('end', function(){ moveEnemies2(enemies) });
 }
 
@@ -133,43 +133,42 @@ moveEnemies2();
 
 //==================
 setInterval(updateScore, 50);
+setInterval(collisionCheck, 50);
 
   function updateScore(){
     var currentScore = d3.select('.current').select('span');
     currentScore.text(Number(currentScore.text())+1);
   }
 
-function collisionCheck(enemy, collideCallback){
-  var player = d3.select('.player');
-  enemy.each( function(enemy){
-    var radiusSum = parseFloat(player.r - enemy.r);
-    xDiff = parseFloat(enemy.attr('cx')) - player.cx;
-    yDiff = parseFloat(enemy.attr('cy')) - player.cy;
+  function updateBestScore(){
+    var bestScore = d3.select('.high').select('span');
+    var currentScore = d3.select('.current').select('span');
+    if(Number(currentScore.text()) > Number(bestScore.text())){
+      bestScore.text(d3.select('.current').select('span').text());
+    }
+  }
+
+
+function collisionCheck(){
+  debugger;
+  enemies.each(posCheck);
+
+  function collideCallBack (){
+    updateBestScore();
+    d3.select('.current').select('span').text(0);
+    d3.select('.collisions').select('span').text(Number(d3.select('.collisions').select('span').text())+1);
+  }
+
+  function posCheck(){
+    var enemy = d3.select(this);
+    var player = d3.select('.player');
+    var radiusSum = parseFloat(20 + 15);
+    xDiff = parseFloat(enemy.attr('x')) - player.attr("x");
+    yDiff = parseFloat(enemy.attr('y')) - player.attr("y");
 
     separation = Math.sqrt( Math.pow(xDiff,2) + Math.pow(yDiff,2) );
     if (separation < radiusSum){
-      collideCallback(player, enemy);
+      collideCallBack();
     };
-  });
-
-  function collideCallBack (player, enemy){
-    updateBestScore()
-    d3.select('.current').select('span').text(0);
-    updateScore();  //update score sets score to 
   }
-
-
-
-
-  function updateBestScore(){
-    var bestScore = d3.select('.high').select('span');
-    bestScore.text(d3.select('.current').select('span').text());
-  }
-
-
-
-
-
-
-
 }
