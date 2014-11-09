@@ -28,25 +28,24 @@
 //       .attr("cy", d.y = Math.max(radius, Math.min(height - radius, d3.event.y)));
 // }
 
-var gameBoard = d3.select("body").append("svg").attr("width", 900).attr("height", 500);
+var gameSettings = {
+  gameHeight: 500,
+  gameWidth: 900,
+  heroWidth: 15,
+  heroHeight: 15,
+  nEnemies: 20
+}
+
+var gameBoard = d3.selectAll(".gameboard").append("svg").attr("width", 900).attr("height", 500);
 gameBoard.selectAll("image").data([0]).enter()
         .append("svg:image")
         .attr("xlink:href", "http://i.imgur.com/AOnWVjT.jpg")
         .attr("x", "0")
         .attr("y", "0")
-        .attr("width", "900")
-        .attr("height", "500")
-        .classed("gameBoard", true);
-
-var width = 240,
-    height = 125,
-    radius = 20;
-
-var heroWidth = 15;
-var heroHeight = 15;
-var heroX = (width - heroWidth)/2;
-var heroY = (height - heroHeight)/2;
-var heroColor = 'yellow';
+        .attr("height", gameSettings.gameHeight)
+        .attr("width", gameSettings.gameWidth)
+        //.classed("gameBoard", true)
+        ;
 
 var drag = d3.behavior.drag()
 .origin(function() {
@@ -55,111 +54,119 @@ return {x: t.attr('x'), y: t.attr('y')};
 })
 .on('drag', dragmove);
 
-var hero = gameBoard.append('rect')
-.attr('x', heroX)
-.attr('y', heroY)
-.attr('width', heroWidth)
-.attr('height', heroHeight)
-.attr('fill', heroColor)
-.call(drag);
+var hero = gameBoard.append('svg:image')
+        .classed("player", true)
+        .attr("xlink:href", "http://i.imgur.com/p06ZFiK.gif")
+        .attr("x", gameSettings.gameWidth/2)
+        .attr("y", gameSettings.gameHeight/2)
+        .attr("width", "40")
+        .attr("height", "40")
+        .call(drag);
+
+// var hero = gameBoard.append('circle').classed('player', true)
+// .attr('cx', (240 - gameSettings['heroWidth'])/2)
+// .attr('cy', (125 - gameSettings['heroHeight'])/2)
+// .attr("r", 25)
+// .attr('width', gameSettings['heroWidth'])
+// .attr('height', gameSettings['heroHeight'])
+// .attr('fill', heroColor)
+// .call(drag);
 
 function dragmove() {
 d3.select(this).attr('x', d3.event.x)
 .attr('y', d3.event.y);
 }
 
-var random = JSON.stringify(Math.floor(Math.random()*100));
 
-var enemy = d3.select("svg").classed("enemy", true).append("svg:image")
+
+ var enemies = gameBoard.selectAll("enemy")
+        .data(d3.range(gameSettings.nEnemies))
+        .each(setPosition)
+        .enter()
+        .append("svg:image")
+        .attr("class", "enemy")
+        //.attr("transform", "rotate(45)")
+        //.attr("transform", "rotate(-60, 150, 130")
+        //.attr("xlink:href", "starGif.gif")
         .attr("xlink:href", "http://imgur.com/6KjXC3q.png")
-        .attr("x", random)
-        .attr("y", random)
+        // .attr("x", random(gameSettings.gameWidth))
+        // .attr("y", random(gameSettings.gameHeight))
         .attr("width", "30")
-        .attr("height", "30");
+        .attr("height", "30")
+        ;
+ 
+ function setPosition(){
+  d3.select(this)
+  .attr("x", random(gameSettings.gameWidth))
+  .attr("y", random(gameSettings.gameHeight));
+ }
 
-// var player = d3.select("svg").classed("player", true).append("svg:image")
-//         .attr("xlink:href", "http://img3.wikia.nocookie.net/__cb20081004200429/mk_/images/f/f3/Scorpion-mk2-fix1.gif")
-//         .attr("x", "20")
-//         .attr("y", "20")
-//         .attr("width", "90")
-//         .attr("height", "90")
-//         .attr("cx", function(d) { return d.x; })
-//         .attr("cy", function(d) { return d.y; })
-//         .call(drag);
+//=============================================================
 
-var moveEnemy = function(){
-  enemy.transition().attr("x", random).attr("y", random);
-  setTimeout(moveEnemy2, 500);
+function spinStars(){
+  enemies.each(spinStar);
 }
-var moveEnemy2 = function(){
-  enemy.transition().attr("x", random).attr("y", random);
-  setTimeout(moveEnemy, 500)
+
+// function spinStar(){
+//   debugger;
+//   d3.select(this).attr("transform", "rotate(40)");
+//     //"+(d3.select(this).attr("x") - (d3.select(this).attr("width")/2))+", "+(d3.select(this).attr("y") - (d3.select(this).attr("height")/2))+")" );
+// }
+
+// spinStars();
+
+//================
+//move enemies/stars
+function random(gameParameter){
+  return JSON.stringify(Math.floor(gameParameter * Math.random()))
+};
+var moveEnemies2 = function(){
+  enemies.each(moveEnemy);
 }
-moveEnemy();
+var moveEnemy = function(enemy){
+  d3.select(this).transition().duration(2000).attr("x", random(gameSettings.gameWidth)).attr("y", random(gameSettings.gameHeight))
+  .each('end', function(){ moveEnemies2(enemies) });
+}
+
+moveEnemies2();
 
 
-// .append("circle")
-//  .attr("cx", 25).attr("cy", 25).attr("r", 25).style("fill", "red");
+//==================
 
- // enemy.selectAll("image").data([0]).enter()
- //        .append("svg:image")
- //        .attr("xlink:href", "http://imgur.com/6KjXC3q.png")
- //        .attr("x", "0")
- //        .attr("y", "0")
- //        .attr("width", "20")
- //        .attr("height", "20")
+function collisionCheck(enemy, collideCallback){
+  var player = d3.select('.player');
+  enemy.each( function(enemy){
+    var radiusSum = parseFloat(player.r - enemy.r);
+    xDiff = parseFloat(enemy.attr('cx')) - player.cx;
+    yDiff = parseFloat(enemy.attr('cy')) - player.cy;
 
+    separation = Math.sqrt( Math.pow(xDiff,2) + Math.pow(yDiff,2) );
+    if (separation < radiusSum){
+      collideCallback(player, enemy);
+    };
+});
 
-
-// d3.select("body").append("svg").attr("width", 50).attr("height", 50).classed("enemy", true).append("circle")
- //.attr("cx", 25).attr("cy", 25).attr("r", 25).style("fill", "black");
-
-
-
-
-
-
-
+  function collideCallBack (player, enemy){
+    updateBestScore()
+    d3.select('.current').select('span').text(0);
+    updateScore();  //update score sets score to 
+  }
 
 
+  function updateScore(){
+    var currentScore = d3.select('.current').select('span');
+    currentScore.text(Number(currentScore.text())+1);
+  }
 
-
-// /*
-// var svg = d3.select("body").append("svg")
-//     .attr("width", width)
-//     .attr("height", height)
-//   .append("g")
-//     .attr("transform", "translate(32," + (height / 2) + ")");
-// */
-
-
-
-// //http://mbostock.github.io/d3/talk/20111018/collision.html
-
-// // var bodySelection = d3.select("body");
-// // var svgSelection = bodySelection.append("svg")
-// //                                 .attr("width", 50)
-// //                                 .attr("height", 50);
-// // var circleSelection = svgSelection.append("circle")
-// //                                    .attr("cx", 25)
-// //                                    .attr("cy", 25)
-// //                                    .attr("r", 25)
-// //                                    .style("fill", "black");
-// d3.select("body").append("svg").attr("width", 50).attr("height", 50).classed("enemy", true).append("circle")
-//  .attr("cx", 25).attr("cy", 25).attr("r", 25).style("fill", "black");
+  function updateBestScore(){
+    var bestScore = d3.select('.high').select('span');
+    bestScore.text(d3.select('.current').select('span').text());
+  }
 
 
 
-// var circleRadii = [40, 20, 10];
 
-// var svgContainer = d3.select("body").append("svg").attr("width", 200).attr("height", 200);
 
-// var circles = svgContainer.selectAll("circle").data(circleRadii).enter().append("circle");
 
-// //console.log(d3.select("body").append("svg").attr("width", 200).attr("height", 200).selectAll("circle").data(circleRadii).enter().append("circle"));
 
-// var circleAttributes = circles
-//                        .attr("cx", 50)
-//                        .attr("cy", 50)
-//                       .attr("r", function (d) { return d; })
-//                        .style("fill", "green");
+}
