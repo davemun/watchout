@@ -132,6 +132,12 @@ moveEnemies2();
 
 
 //==================
+setInterval(updateScore, 50);
+
+  function updateScore(){
+    var currentScore = d3.select('.current').select('span');
+    currentScore.text(Number(currentScore.text())+1);
+  }
 
 function collisionCheck(enemy, collideCallback){
   var player = d3.select('.player');
@@ -144,7 +150,7 @@ function collisionCheck(enemy, collideCallback){
     if (separation < radiusSum){
       collideCallback(player, enemy);
     };
-});
+  });
 
   function collideCallBack (player, enemy){
     updateBestScore()
@@ -153,10 +159,7 @@ function collisionCheck(enemy, collideCallback){
   }
 
 
-  function updateScore(){
-    var currentScore = d3.select('.current').select('span');
-    currentScore.text(Number(currentScore.text())+1);
-  }
+
 
   function updateBestScore(){
     var bestScore = d3.select('.high').select('span');
